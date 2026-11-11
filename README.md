@@ -1,46 +1,32 @@
-# KVS to MP3｜Windows 音訊批次轉檔 GUI
+# KVS to MP3｜把重複的音訊轉檔工作變成一個工具
 
-> 以 Python Tkinter 建立的桌面工具，串接 `vgmstream-cli` 與 FFmpeg，將本機支援的 `.kvs` 音訊轉成 192 kbps MP3。
+我遇到的問題很簡單：有些遊戲音效是特殊的 `.kvs` 格式，不能直接拿一般播放器或轉檔軟體批次處理。與其每次手動操作多個命令列工具，我做了一個 Windows 小程式，把選資料夾、解碼、轉 MP3 和錯誤整理放在同一個畫面。
 
-[GitHub 面試作品導覽](https://github.com/garyai8146-jpg/Yihop_LineBOT/blob/main/PORTFOLIO.md)
+**[看看其他作品](https://github.com/garyai8146-jpg/Yihop_LineBOT/blob/main/PORTFOLIO.md)**
 
-## 主要功能
+## 怎麼運作
 
-- 批次掃描指定資料夾內的 `.kvs` 檔案。
-- 使用 vgmstream 解碼為暫存 WAV，交由 FFmpeg 編碼為 MP3。
-- 在背景執行緒處理轉檔工作，介面提供進度與錯誤提示。
-- 以 `sys._MEIPASS` 兼容 PyInstaller 打包的檔案路徑。
-- 將部分失敗資訊輸出到桌面 `KVS_Error_Log.txt` 便於排查。
+1. 選擇含有 `.kvs` 檔案的資料夾與 MP3 輸出資料夾。
+2. 背景工作依序呼叫 `vgmstream-cli`，把支援的音訊解碼成暫存 WAV。
+3. 再交由 FFmpeg 轉成 192 kbps MP3。
+4. 完成後清除暫存 WAV，顯示成功數量；有錯誤時輸出記錄。
 
-**權限取捨：** 目前原始碼在啟動時會嘗試透過 Windows UAC 以管理員身分重新執行，並非只在確有必要時要求提權。正式發行前應優先採最小權限原則，必要時才請求提升權限。
+介面使用 Tkinter；轉檔放在工作執行緒，進度則透過 Queue 交回主執行緒更新，避免背景執行緒直接操作視窗。新版也**不再強制要求管理員權限**。
 
-## 技術棧
+## 執行方式
 
-Python · Tkinter · threading · subprocess · Windows UAC · vgmstream · FFmpeg
+**打包版本：** 到 [Releases](https://github.com/garyai8146-jpg/kvs-to-mp3/releases) 下載 `KVS_Decryptor.7z`，解壓縮後使用。既有 Release 是舊版封裝，未必包含這次原始碼的安全與執行緒修正，請以最新原始碼為準。
 
-## 使用方式
-
-### 已打包版本
-
-前往 [Releases](https://github.com/garyai8146-jpg/kvs-to-mp3/releases)，下載 `KVS_Decryptor.7z`，解壓縮後再依封裝內容啟動。Release 提供的是 **7z 壓縮包**，不是直接下載單獨的 EXE。
-
-### 從原始碼啟動
-
-1. 安裝 Python 3（Windows）。
-2. 下載 [FFmpeg](https://ffmpeg.org/download.html) 和 [vgmstream](https://github.com/vgmstream/vgmstream/releases) 的 Windows 命令列程式。
-3. 將 `ffmpeg.exe`、`vgmstream-cli.exe` 與其所需 DLL 放在 `kvs.py` 相同資料夾，或依程式搜尋邏輯配置路徑。
-4. 執行：
+**原始碼：** Windows 安裝 Python 3、[FFmpeg](https://ffmpeg.org/download.html)、[vgmstream](https://github.com/vgmstream/vgmstream/releases)，把 `ffmpeg.exe`、`vgmstream-cli.exe` 與必要 DLL 放在程式同層，再執行：
 
 ```powershell
 python kvs.py
 ```
 
-## 已知限制
+## 這個專案學到什麼
 
-- 解碼是否成功取決於 vgmstream 對實際 KVS 變體的支援，**不保證可處理所有版本或加密格式**。
-- 需要 Windows，且目前提權方式、子程序錯誤處理與 GUI 執行緒互動尚需更完整的測試。
-- 本儲存庫不提供受版權保護的遊戲音訊。請只處理有權使用的檔案。
+小工具不只是把兩條指令串起來：工作很久時 GUI 不能卡住、失敗的檔案要能追查、暫存檔要清乾淨，也不應該因為方便就讓整個程式長期用管理員權限執行。
 
-## 面試展示
+## 注意事項
 
-推薦說明 `GUI → 背景工作 → 外部解碼器 → 暫存 WAV → MP3` 的管線設計、子程序錯誤回報、Windows 檔案權限與最小權限原則。
+解碼成功取決於 vgmstream 支援的 KVS 變體，不保證每種遊戲音訊都能處理。GitHub Actions 會做 Python 語法與基本安全檢查；實際 Windows GUI、外部解碼器及不同檔案格式仍需要在 Windows 上驗收。請只處理有使用權的音訊。
