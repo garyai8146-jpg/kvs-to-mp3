@@ -1,0 +1,28 @@
+name: Python syntax checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check source compiles
+        run: python -m py_compile kvs.py
+      - name: Confirm no global elevation or background Tk writes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('kvs.py').read_text(encoding='utf-8')
+          assert 'ShellExecuteW' not in text
+          assert 'ctypes.windll' not in text
+          assert 'queue.Queue' in text
+          assert 'self.主體.after' in text
+          print('Minimum security and GUI-thread checks passed.')
+          PY
